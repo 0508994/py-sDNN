@@ -78,16 +78,25 @@ class DNN:
 
 
     def get_params(self):
-        '''
-            concat all weights and biases and return them?
-        '''
-        pass
+        # Concat all weights and biases and return them as 1-D array
+        return np.concatenate([*[w.ravel() for w in self.Ws],
+                               *[b         for b in self.bs]])
     
     def set_params(self, params):
-        '''
-            will decide when I decide how to pack them first :D
-        '''
-        pass
+        # Restores neural network parameters
+        # from a given 1-D array.
+        offset = 0
+        # Restore weights
+        for i in range(1, len(self.shape)):
+            wsize = self.shape[i - 1] * self.shape[i]
+            self.Ws[i - 1] = params[offset:offset + wsize]\
+                            .reshape(self.shape[i - 1], self.shape[i])                       
+            offset += wsize
+        # Restore biases
+        for i in range(1, len(self.shape)):
+            self.bs[i - 1] = params[offset:offset + self.shape[i]]
+            offset += self.shape[i]
+
 
     def callback(self, paras):
         '''
@@ -128,6 +137,10 @@ class DNN:
 
 # Debug
 if __name__ == '__main__':
-    nn = DNN(shape=[4, 10, 3])
-    nn._forward([[1.0, 1.0, 1.0, 1.0]])
-    print(nn.y_hat)
+    nn = DNN(shape=[2, 2, 3])
+    #nn._forward([[1.0, 1.0, 1.0, 1.0]])
+    # nn1 = DNN(shape=[2, 2, 3])
+    # nn1.set_params(nn.get_params())
+    # print(nn.bs[1])
+    # print(nn1.bs[1])
+    print(nn.get_params())
