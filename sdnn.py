@@ -48,6 +48,7 @@ class DNN:
                 # https://www.youtube.com/watch?v=s2coXdufOzE
                 self.Ws.append(np.random.randn(shape[i - 1], shape[i]) * np.sqrt(2.0 / shape[i - 1]))
                 self.bs.append(np.random.randn(shape[i])) #* np.sqrt(2.0 / shape[i - 1]))
+                
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -65,16 +66,17 @@ class DNN:
         for i in range(len(self.Ws)):
             tmp = np.dot(tmp, self.Ws[i]) + self.bs[i]
             self.zs.append(tmp)
-            if i != len(self.Ws) - 1 # TODO: find a better way to do this........
+            if i != len(self.Ws) - 1: # TODO: find a better way to do this........
                 tmp = relu(tmp)
                 self.acts.append(tmp)
         self.y_hat = softmax(tmp)
 
     def compute_cost(self, X, y):
-        #self._forward(X)
-        return 0.5 * sum((y - self.y_hat)**2)
+        self._forward(X)
+        return 0.5 * np.sum((y - self.y_hat)**2) 
 
     # https://stackoverflow.com/questions/3775032/how-to-update-the-bias-in-neural-network-backpropagation
+    # https://deepnotes.io/softmax-crossentropy
     def compute_grads(self, X, y):
         #self._forward(X)
         #self.acts.pop()
@@ -125,47 +127,44 @@ class DNN:
         Callback argument for each iteration of the scipy.optimize.minimize
         Called after each iteration, as callback(xk), ----> xk in this case (all my weights and biases)
         where xk is the current parameter vector.
-        
-        Note to self:
-        set params and save cost in a self.J if you want
         '''
-        pass
+        self.set_params(params)
+        self.J.append(self.compute_cost(self.X, self.y))
     
     def objective(self, params, X, y):
         self.set_params(params)
-        self._forward(X)
-        cost = self.compute_cost(X, y)      
+        #self._forward(X)
+        cost = self.compute_cost(X, y)    # calls self._forward  
         grads = self.compute_grads(X, y)    
         return cost, grads
 
         
     def train(self, X, y, maxiter=200):
-        '''
-            Nije bitno kakao pakujem tezine i biase u params0,
-            zato sto ih sam vracam na mesto sa set_params
-        '''
         self.X = X
         self.y = y
-
-        #self.J = []
+        self.J = []
 
         params0 = self.get_params()
-        options = {'maxiter':maxiter, 'disp':True }
+        options = {'maxiter':maxiter, 'disp':True, 'gtol':1e-1}
 
         self.opt_results = minimize(self.objective, params0, jac=True, method='BFGS',\
                                     args=(X, y), options=options, callback=self.callback)    
 
         self.set_params(self.opt_results.x)
+
+
+    def compute_accuracy(self, X_test, y_test):
+        self._forward(X_test)
+        num_correct = 0
+        for i, j in zip(y_test, self.y_hat):
+            if i.argmax() == j.argmax():
+                num_correct += 1
+        return float(num_correct) / len(y_test)
         
 
 # Debug
 if __name__ == '__main__':
     nn = DNN(shape=[2, 3, 1], debug=True)
-    #nn._forward([[1.0, 1.0, 1.0, 1.0]])
-    # nn1 = DNN(shape=[2, 2, 3])
-    # nn1.set_params(nn.get_params())
-    # print(nn.bs[1])
-    # print(nn1.bs[1])
-    print(nn.compute_grads(np.array([[2.0, 3.1]]), np.array([[2.0]])))
-    # nn._forward(np.array([[2.0, 3.1]]))
-    # print(nn.y_hat.shape)
+    p = nn.get_params()
+    nn.set_params(p)
+    print(nn.objective(nn.get_params(), np.array([[2.0, 3.1]]), np.array([[2.0]])))
