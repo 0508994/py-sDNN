@@ -3,40 +3,11 @@ from copy import deepcopy
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from matplotlib import style
+from .utils import *
+#from utils import *
 
 np.seterr(all='ignore')
 style.use('fivethirtyeight')
-
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-def dsigmoid(x):
-    return np.exp(-x) / ((1 + np.exp(-x))**2)
-
-def tanh(x):
-    return np.tanh(x)
-
-def dtanh(x):
-    return 1. - x * x
-
-def relu(x):
-    return x * (x > 0)
-
-def drelu(x):
-    return 1. * (x > 0)
-
-# def softmax(z):
-#     assert len(z.shape) == 2
-#     s = np.max(z, axis=1)
-#     s = s[:, np.newaxis]
-#     e_x = np.exp(z - s)
-#     div = np.sum(e_x, axis=1)
-#     div = div[:, np.newaxis]
-#     return e_x / div
-
-def softmax(X):
-    exps = np.exp(X - np.max(X))
-    return exps / np.sum(exps)
 
 class DNN:
     def __init__(self, shape, debug=False):
@@ -80,9 +51,10 @@ class DNN:
 
     def compute_grads(self, X, y):
         #self._forward(X)
-        delta = np.multiply(-(y - self.y_hat), dsigmoid(self.zs[-1]))
+        delta = np.multiply(-(y - self.y_hat), dsigmoid(self.zs[-1])) # delta = error * derivative
+        #delta = self.delta_cross_entropy(self.zs[-1], y)
         dJdW = np.dot(self.acts[-1].T, delta)
-        dJdb = delta[0] # hope this one just werks :}
+        dJdb = np.sum(delta, axis=0, keepdims=False) # keepdims doesn't matters - sum because it's streamed on each row !!!!
 
         self.zs.pop()                        
         self.acts.pop()
@@ -91,9 +63,9 @@ class DNN:
         grads_b = [dJdb]
 
         for w, z, a in zip(reversed(self.Ws), reversed(self.zs), reversed(self.acts)):
-            delta = np.dot(delta, w.T) * drelu(z)
+            delta = np.dot(delta, w.T) * drelu(z) # delta = error * derivative
             dJdW = np.dot(a.T, delta)
-            dJdb = delta[0]
+            dJdb = np.sum(delta, axis=0, keepdims=False)
             grads_w.insert(0, dJdW)
             grads_b.insert(0, dJdb)    
 
@@ -150,11 +122,13 @@ class DNN:
     def callback(self, params):
         self.set_params(params)
         self.J.append(self.square_error(self.X, self.y))
+
+        #self.J.append(self.cross_entropy(self.X, self.y))
     
     def objective(self, params, X, y):
         self.set_params(params)
-        #self._forward(X)
-        cost = self.square_error(X, y)  
+        cost = self.square_error(X, y)
+        #cost = self.cross_entropy(X, y)  
         grads = self.compute_grads(X, y)    
         return cost, grads
         
@@ -182,22 +156,48 @@ class DNN:
         return float(num_correct) / len(y_test)
 
 
-    def plot_cost(self):
+    def plot_cost(self): # move to another module
         if len(self.J) > 0:
             plt.plot(self.J)
             plt.title('Optimization Results')
             plt.xlabel('Iterations')
             plt.ylabel('Cost/Loss')
             plt.show()
-        
 
-# Debug
-if __name__ == '__main__':
-    from iris import IrisDF
-    df = IrisDF()
-    Xs = df.X_train#np.array([[0.68619022, 0.31670318, 0.61229281, 0.232249 ]])
-    ys = df.y_train#np.array([[1, 0, 0]])
-    nn = DNN(shape=[4, 6, 3], debug=False)
-    print(nn.objective(nn.get_params(), Xs, ys)[1])
-    print()
-    print(nn.compute_num_grads(Xs, ys))
+
+# NOT WORKING
+# try this guy https://stackoverflow.com/questions/50004805/softmax-activation-with-cross-entropy-loss-results-in-the-outputs-converging-to
+# and this one http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/
+    def cross_entropy(self, X , y):
+        """
+        X is the output from fully connected layer (num_examples x num_classes)
+        y is labels (num_examples x 1)
+            Note that y is not one-hot encoded vector. 
+            It can be computed as y.argmax(axis=1) from one-hot encoded vectors of labels if required.
+        """
+        self._forward(X)
+        y = y.argmax(axis=1)
+        m = y.shape[0]
+        #p = softmax(X)
+        p = self.y_hat
+        # We use multidimensional array indexing to extract 
+        # softmax probability of the correct label for each sample.
+        # Refer to https://docs.scipy.org/doc/numpy/user/basics.indexing.html#indexing-multi-dimensional-arrays for understanding multidimensional array indexing.
+        log_likelihood = -np.log(p[range(m), y])
+        loss = np.sum(log_likelihood) / m
+        return loss
+
+    def delta_cross_entropy(self, Z, y):
+        """
+        X is the output from fully connected layer (num_examples x num_classes)
+        y is labels (num_examples x 1)
+            Note that y is not one-hot encoded vector. 
+            It can be computed as y.argmax(axis=1) from one-hot encoded vectors of labels if required.
+        """
+        y = y.argmax(axis=1)
+        m = y.shape[0]
+        #grad = softmax(Z)
+        grad = self.y_hat            # already computed in forward
+        grad[range(m),y] -= 1
+        grad = grad / m
+        return grad
