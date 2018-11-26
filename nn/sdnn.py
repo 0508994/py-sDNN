@@ -16,6 +16,8 @@ class DNN:
         self.Ws = []
         self.bs = []
 
+        #self.reg_lambda = 0.01
+
         np.random.seed(0)
         for i in range(1, len(shape)):
             if debug:
@@ -63,6 +65,21 @@ class DNN:
         loss = np.sum(log_likelihood) / m
         return loss
 
+    # def cross_entropy_w_loss_reg(self, X , y): # not used
+    #     self._forward(X)
+    #     y = y.argmax(axis=1)
+    #     num_examples = y.shape[0]
+
+    #     corect_logprobs = -np.log(self.y_hat[range(num_examples), y])
+    #     data_loss = np.sum(corect_logprobs)
+    #     # Add regulatization term to loss (optional)
+    #     s = 0
+    #     for w in self.Ws:
+    #         s += np.sum(np.square(w))
+    #     data_loss += self.reg_lambda / 2 * s
+    #     #return 1. / num_examples * data_loss
+    #     return data_loss
+
     def delta_cross_entropy(self, y):
         y = y.argmax(axis=1)
         m = y.shape[0]
@@ -76,6 +93,7 @@ class DNN:
         #delta = np.multiply(-(y - self.y_hat), dsigmoid(self.zs[-1])) # delta = error * derivative
         delta = self.delta_cross_entropy(y)
         dJdW = np.dot(self.acts[-1].T, delta)
+        #dJdW += dJdW * self.reg_lambda
         dJdb = np.sum(delta, axis=0, keepdims=False) # keepdims doesn't matters - sum because it's streamed on each row !!!!
 
         self.zs.pop()                        
@@ -87,6 +105,7 @@ class DNN:
         for w, z, a in zip(reversed(self.Ws), reversed(self.zs), reversed(self.acts)):
             delta = np.dot(delta, w.T) * drelu(z) # delta = error * derivative
             dJdW = np.dot(a.T, delta)
+            #dJdW += dJdW * self.reg_lambda
             dJdb = np.sum(delta, axis=0, keepdims=False)
             grads_w.insert(0, dJdW)
             grads_b.insert(0, dJdb)    
@@ -119,7 +138,6 @@ class DNN:
 
         return numgrad 
 
-
     def get_params(self):
         # Concat all weights and biases and return them as 1-D array
         return np.concatenate([*[w.ravel() for w in self.Ws],
@@ -139,7 +157,6 @@ class DNN:
         for i in range(1, len(self.shape)):
             self.bs[i - 1] = params[offset:offset + self.shape[i]]
             offset += self.shape[i]
-
 
     def callback(self, params):
         self.set_params(params)
@@ -165,7 +182,6 @@ class DNN:
 
         self.set_params(self.opt_results.x)
 
-
     # Utils
     def compute_accuracy(self, X_test, y_test):
         self._forward(X_test)
@@ -174,7 +190,6 @@ class DNN:
             if i.argmax() == j.argmax():
                 num_correct += 1
         return float(num_correct) / len(y_test)
-
 
     def plot_cost(self):
         if len(self.J) > 0:
