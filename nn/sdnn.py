@@ -182,7 +182,7 @@ class DNN:
 
         self.set_params(self.opt_results.x)
 
-    # Utils
+    
     def compute_accuracy(self, X_test, y_test):
         self._forward(X_test)
         num_correct = 0
@@ -190,6 +190,14 @@ class DNN:
             if i.argmax() == j.argmax():
                 num_correct += 1
         return float(num_correct) / len(y_test)
+
+    def predict(self, X):
+        self._forward(X)
+        return self.y_hat.argmax(axis=1)
+
+    def predict_probs(self, X):
+        self._forward(X)
+        return np.copy(self.y_hat)
 
     def plot_cost(self):
         if len(self.J) > 0:
