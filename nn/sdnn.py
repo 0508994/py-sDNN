@@ -10,24 +10,18 @@ np.seterr(all='ignore')
 style.use('fivethirtyeight')
 
 class DNN:
-    def __init__(self, shape, debug=False):
+    def __init__(self, shape, reg_lambda=0.0001):
         assert len(shape) > 2
         self.shape = shape
         self.Ws = []
         self.bs = []
-
-        #self.reg_lambda = 0.01
+        self.reg_lambda = reg_lambda
 
         np.random.seed(0)
         for i in range(1, len(shape)):
-            if debug:
-                self.Ws.append(np.ones([shape[i - 1], shape[i]])) 
-                self.bs.append(np.zeros(shape[i])) 
-            else:
-                self.Ws.append(np.random.randn(shape[i - 1], shape[i]) * np.sqrt(2.0 / shape[i - 1]))
-                self.bs.append(np.zeros(shape[i])) #* np.sqrt(2.0 / shape[i - 1]))
+            self.Ws.append(np.random.randn(shape[i - 1], shape[i]) * np.sqrt(2.0 / shape[i - 1]))
+            self.bs.append(np.zeros(shape[i])) #* np.sqrt(2.0 / shape[i - 1]))
                 
-
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -54,7 +48,7 @@ class DNN:
 
     # taken from https://deepnotes.io/softmax-crossentropy
     # and this one http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/
-    def cross_entropy(self, X , y):
+    def cross_entropy0(self, X , y):
         self._forward(X)
         y = y.argmax(axis=1)
         m = y.shape[0]
@@ -64,6 +58,21 @@ class DNN:
         log_likelihood = -np.log(self.y_hat[range(m), y])
         loss = np.sum(log_likelihood) / m
         return loss
+
+    def cross_entropy(self, X , y): # not used
+        self._forward(X)
+        y = y.argmax(axis=1)
+        num_examples = y.shape[0]
+
+        corect_logprobs = -np.log(self.y_hat[range(num_examples), y])
+        data_loss = np.sum(corect_logprobs) / num_examples
+        # Add regulatization term to loss (optional)
+        s = 0
+        for w in self.Ws:
+            s += np.sum(np.square(w))
+        data_loss += self.reg_lambda / 2 * s
+
+        return data_loss 
 
     def delta_cross_entropy(self, y):
         y = y.argmax(axis=1)
@@ -91,7 +100,12 @@ class DNN:
             dJdW = np.dot(a.T, delta)
             dJdb = np.sum(delta, axis=0, keepdims=False)
             grads_w.insert(0, dJdW)
-            grads_b.insert(0, dJdb)    
+            grads_b.insert(0, dJdb)
+
+
+        # Apply regularization
+        for i in range(len(grads_w)):
+            grads_w[i] += self.Ws[i] * self.reg_lambda    
 
         return np.concatenate([*grads_w, *grads_b], axis=None)
 
@@ -152,10 +166,11 @@ class DNN:
         grads = self.compute_grads(X, y)    
         return cost, grads
         
-    def train(self, X, y, maxiter=200):
+    def train(self, X, y, maxiter=200, reg_lambda=0.0001):
         self.X = X
         self.y = y
         self.J = []
+        self.reg_lambda = reg_lambda
 
         params0 = self.get_params()
         options = {'maxiter':maxiter, 'disp':True}
