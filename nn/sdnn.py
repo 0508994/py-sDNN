@@ -55,7 +55,7 @@ class DNN:
         # We use multidimensional array indexing to extract 
         # softmax probability of the correct label for each sample.
         # Refer to https://docs.scipy.org/doc/numpy/user/basics.indexing.html#indexing-multi-dimensional-arrays for understanding multidimensional array indexing.
-        log_likelihood = -np.log(self.y_hat[range(m), y])
+        log_likelihood = -np.log(self.y_hat[range(m), y]) # biggest prob. for each row (y is an index now) --> ndarray
         loss = np.sum(log_likelihood) / m
         return loss
 
