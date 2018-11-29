@@ -17,7 +17,7 @@ class DNN:
         self.bs = []
         self.reg_lambda = reg_lambda
 
-        np.random.seed(0)
+        #np.random.seed(0)
         for i in range(1, len(shape)):
             self.Ws.append(np.random.randn(shape[i - 1], shape[i]) * np.sqrt(2.0 / shape[i - 1]))
             self.bs.append(np.zeros(shape[i])) #* np.sqrt(2.0 / shape[i - 1]))
@@ -59,7 +59,7 @@ class DNN:
         loss = np.sum(log_likelihood) / m
         return loss
 
-    def cross_entropy(self, X , y): # not used
+    def cross_entropy(self, X , y): # cross_entropy with L2 regularization
         self._forward(X)
         y = y.argmax(axis=1)
         num_examples = y.shape[0]
