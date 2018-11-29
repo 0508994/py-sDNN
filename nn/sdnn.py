@@ -49,13 +49,18 @@ class DNN:
     # taken from https://deepnotes.io/softmax-crossentropy
     # and this one http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/
     def cross_entropy0(self, X , y):
+        # https://stats.stackexchange.com/questions/198038/cross-entropy-or-log-likelihood-in-output-layer
+        # The negative log likelihood (eq.80) is also known as
+        # the multiclass cross-entropy (ref: Pattern Recognition and Machine Learning Section 4.3.4), as they are in fact two different interpretations of the same formula.
         self._forward(X)
         y = y.argmax(axis=1)
         m = y.shape[0]
         # We use multidimensional array indexing to extract 
         # softmax probability of the correct label for each sample.
         # Refer to https://docs.scipy.org/doc/numpy/user/basics.indexing.html#indexing-multi-dimensional-arrays for understanding multidimensional array indexing.
-        log_likelihood = -np.log(self.y_hat[range(m), y]) # biggest prob. for each row (y is an index now) --> ndarray
+        log_likelihood = -np.log(self.y_hat[range(m), y]) # actual prediction for the correct class for each row (y is an index now) --> ndarray
+        # https://ljvmiranda921.github.io/notebook/2017/08/13/softmax-and-the-negative-log-likelihood/
+        # for example log of 0.98 certanty is -0.02 (remove the min with -log()) -- loss is small !
         loss = np.sum(log_likelihood) / m
         return loss
 
@@ -78,7 +83,7 @@ class DNN:
         y = y.argmax(axis=1)
         m = y.shape[0]
         grad = np.copy(self.y_hat)            # already computed in forward
-        grad[range(m),y] -= 1
+        grad[range(m), y] -= 1
         grad = grad / m
         return grad
 
