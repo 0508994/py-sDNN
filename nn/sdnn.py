@@ -1,13 +1,10 @@
 import numpy as np
 from copy import deepcopy
 from scipy.optimize import minimize
-import matplotlib.pyplot as plt
-from matplotlib import style
 from .utils import *
 #from utils import *
 
 np.seterr(all='ignore')
-style.use('fivethirtyeight')
 
 class DNN:
     def __init__(self, shape, reg_lambda=0.0001):
@@ -201,11 +198,3 @@ class DNN:
     def predict_probs(self, X):
         self._forward(X)
         return np.copy(self.y_hat)
-
-    def plot_cost(self):
-        if len(self.J) > 0:
-            plt.plot(self.J)
-            plt.title('Optimization Results')
-            plt.xlabel('Iterations')
-            plt.ylabel('Cost/Loss')
-            plt.show()
