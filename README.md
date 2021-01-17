@@ -1,6 +1,6 @@
 # py-sDNN
 
-This repository represents an atempt to implement a simple, configurable, deep neural network from scratch, using nothing but pure python code along with some [SciPy](https://www.scipy.org/) tools. Primary resource used is Welch Labs [neural networks demystified series](https://www.youtube.com/watch?v=bxe2T-V8XRs&list=PLiaHhY2iBX9hdHaRr6b7XevZtgZRa1PoU) on YouTube. This is by no means an efficient implementation, and its only purpose was me learning the basics on how neural networks actually work.
+This repository represents an atempt to implement a simple, configurable, deep neural network from scratch, using nothing but pure python code along with some [SciPy](https://www.scipy.org/) tools. Primary resource used is Welch Labs [neural networks demystified series](https://www.youtube.com/watch?v=bxe2T-V8XRs&list=PLiaHhY2iBX9hdHaRr6b7XevZtgZRa1PoU) on YouTube. This is by no means an efficient implementation, and its only purpose is learning.
 
 
 
